@@ -109,7 +109,7 @@ class EggCarton(SimAnnBase):
 		iteration = 0
 		FP = self.evalBoard(P)
 
-		while FP != self.Ftarget and T > 1e-3:
+		while FP != self.Ftarget and T > self.dT:
 			neighbors = self.genNeighbors(P)
 			Pmax = None
 			FPmax = -m.inf
@@ -120,7 +120,7 @@ class EggCarton(SimAnnBase):
 					FPmax = FPn
 					Pmax = neighbor
 
-			q = abs(float(abs(FPmax - FP)) / FP)
+			q = float(FPmax - FP)
 			p = min(1.0, m.e**(-q / T))
 			x = rand.random()
 
