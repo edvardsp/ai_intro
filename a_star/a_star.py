@@ -1,5 +1,5 @@
 import time
-from colorama import init, Fore, Back
+from colorama import init, Fore, Back, Cursor
 
 
 # Tested on python-3.4
@@ -140,30 +140,35 @@ class SearchBase(object):
     # with special chars.
     def printBoard(self, show_sets=True, path=[]):
         # For each node
+        board = Cursor.POS(1, 1)
         for y in range(self.y_size):
             for x in range(self.x_size):
+
                 n = (x, y)
                 if n in self.nodes:
                     char = self.nodes[n]
                 else:
                     char = '#'
+                c = color[char]
+
 
                 # Show Start and Goal node specially
                 if n == self.start or n == self.goal:
-                    print(color[char] + char, end="")
+                    board += c + char
                 # If node in path, print special char
                 elif n in path:
-                    print(color[char] + Fore.RED + '@', end="")
+                    board += c + Fore.RED + '@'
                 # If node in open_set, print special char
                 elif show_sets and n in self.open_set:
-                    print(color[char] + Fore.CYAN + '*', end="")
+                    board += c + Fore.CYAN + '*'
                 # If node in closed_set, print special char
                 elif show_sets and n in self.closed_set:
-                    print(color[char] + Fore.MAGENTA + 'x', end="")
-                # Else, print only background color
+                    board += c + Fore.MAGENTA + 'x'
+                # print only background color
                 else:
-                    print(color[char] + " ", end="")
-            print()
+                    board += c + ' '
+            board += '\n'
+        print(board)
 
     # Convenience function for printing final path
     def printPath(self, path):
@@ -376,6 +381,7 @@ class Dijkstra(SearchBase):
 # Computes the given algorithm on all given boards
 def do_task(boards, algo, show_prog):
     for board in boards:
+        print(chr(27) + "[2J")
 
         # Parse Board
         algo.parseBoard(board)
@@ -405,6 +411,7 @@ if __name__ == '__main__':
 
     # Simple terminal UI
     while True:
+        print(chr(27) + "[2J")
         algo_inp = input('[a]star, [b]fs, or [d]ijkstra? ')
         if algo_inp == 'a':
             algo = astar
