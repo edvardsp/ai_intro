@@ -11,9 +11,6 @@ class Point(object):
 	def __eq__(self, other):
 		return self.x == other.x and self.y == other.y
 
-	def __neq__(self, other):
-		return not self.__eq__(other)
-
 	def __repr__(self):
 		return "<{},{}>".format(self.x, self.y)
 
@@ -29,7 +26,7 @@ class EggCarton(SimAnnBase):
 		self.N = N
 		self.K = K
 		self.Tmax = 1.0
-		self.dT = 1e-4
+		self.dT = 1e-5
 		self.Ftarget = 0
 
 	def __repr__(self):
@@ -46,6 +43,8 @@ class EggCarton(SimAnnBase):
 				p = Point(x, y)
 				board.append(p)
 			left = max(left - self.M, 0)
+
+		
 
 		return board
 
@@ -70,7 +69,7 @@ class EggCarton(SimAnnBase):
 		straigt_penalty = 0.9
 		diag_penalty    = 0.1
 
-		cumsum = sum(map(F, [xs, ys]))    * straigt_penalty
+		cumsum =  sum(map(F, [xs, ys]))   * straigt_penalty
 		cumsum += sum(map(F, [ds1, ds2])) * diag_penalty
 
 		return self.Ftarget - cumsum
@@ -96,9 +95,9 @@ class EggCarton(SimAnnBase):
 		for y in range(self.N):
 			for x in range(self.M):
 				if Point(x,y) in board:
-					print('X', end='')
+					print('X ', end='')
 				else:
-					print('.', end='')
+					print('. ', end='')
 			print()
 
 	def simulated_annealing(self, numEggs):
@@ -112,7 +111,7 @@ class EggCarton(SimAnnBase):
 		while FP != self.Ftarget and T > self.dT:
 			neighbors = self.genNeighbors(P)
 			Pmax = None
-			FPmax = -m.inf
+			FPmax = -float('inf')
 
 			for neighbor in neighbors:
 				FPn = self.evalBoard(neighbor)
@@ -120,7 +119,7 @@ class EggCarton(SimAnnBase):
 					FPmax = FPn
 					Pmax = neighbor
 
-			q = float(FPmax - FP)
+			q = max(0, float(FPmax - FP))
 			p = min(1.0, m.e**(-q / T))
 			x = rand.random()
 
@@ -158,8 +157,8 @@ def main():
 			FP, P = puzzle.simulated_annealing(numEggs)
 			if FP != puzzle.Ftarget:
 				print("Max eggs is {}\n".format(numEggs-1))
-				puzzle.printBoard(lastP)
 				break
+			puzzle.printBoard(P)
 			numEggs += 1
 
 			print()
