@@ -144,19 +144,14 @@ def main():
 		print("New puzzle {}!".format(puzzle))
 
 		numEggs = puzzle.M * puzzle.K 
-		P = None
-		while numEggs == puzzle.M * puzzle.K:
-			print("Testing for {} eggs".format(numEggs))
+		print("Testing for {} eggs".format(numEggs))
 
-			lastP = P
-			FP, P = puzzle.simulated_annealing(numEggs)
-			if FP != puzzle.Ftarget:
-				print("Max eggs is {}\n".format(numEggs-1))
-				break
-			puzzle.printBoard(P)
-			numEggs += 1
 
-			print()
+		FP, P = puzzle.simulated_annealing(numEggs)
+		if FP != puzzle.Ftarget:
+			print("Failed to find a solution!")
+			
+		puzzle.printBoard(P)
 
 		input("Next\n")
 
