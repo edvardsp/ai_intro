@@ -16,7 +16,6 @@ def main():
 		numEggs = puzzle.M * puzzle.K 
 		print("Testing for {} eggs".format(numEggs))
 
-
 		FP, P = puzzle.simulated_annealing(numEggs)
 		if FP != puzzle.Ftarget:
 			print("Failed to find a solution!")
