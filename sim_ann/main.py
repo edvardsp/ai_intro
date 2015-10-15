@@ -1,14 +1,18 @@
 import random as rand
+
 import eggcarton as egg
+import switchboard as switch
 
 eggPuzzles = [egg.EggCarton(5, 5, 2), egg.EggCarton(6, 6, 2),
 		      egg.EggCarton(8, 8, 1), egg.EggCarton(10, 10, 3)]
 
+switchPuzzles = []
 
 def main():
 	rand.seed()
 
-	# The Egg Carton Puzzle
+	# Part 1
+	print("The Egg Carton Puzzles", end="\n\n")
 
 	for puzzle in eggPuzzles:
 		print("New puzzle {}!".format(puzzle))
@@ -24,9 +28,14 @@ def main():
 
 		input("Next\n")
 
-	# The switchboard Puzzle
+	# Part 2
+	print("The Switchboard Puzzles")
 
-	
+	for puzzle in switchPuzzles:
+
+
+
+		input("Next\n")
 
 if __name__ == '__main__':
 	main()
