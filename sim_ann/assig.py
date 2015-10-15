@@ -14,12 +14,7 @@ class Point(object):
 	def __repr__(self):
 		return "<{},{}>".format(self.x, self.y)
 
-class SimAnnBase(object):
-
-	def __init__(self):
-		pass
-
-class EggCarton(SimAnnBase):
+class EggCarton(object):
 	
 	def __init__(self, M, N, K):
 		self.M = M
