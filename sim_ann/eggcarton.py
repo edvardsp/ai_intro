@@ -19,6 +19,7 @@ class EggCarton(object):
         self.M = M
         self.N = N
         self.K = K
+
         self.Tmax = 1.0
         self.dT = 1e-5
         self.Ftarget = 0
@@ -105,7 +106,7 @@ class EggCarton(object):
         while FP != self.Ftarget and T > self.dT:
             neighbors = self.genNeighbors(P)
             Pmax = None
-            FPmax = -float('inf')
+            FPmax = -1
 
             for neighbor in neighbors:
                 FPn = self.evalBoard(neighbor)
@@ -113,7 +114,7 @@ class EggCarton(object):
                     FPmax = FPn
                     Pmax = neighbor
 
-            q = max(0, float(FPmax - FP))
+            q = max(0.0, float(FPmax - FP))
             p = min(1.0, m.e**(-q / T))
             x = rand.random()
 
@@ -126,7 +127,7 @@ class EggCarton(object):
             T -= self.dT
 
             iteration += 1
-
+        
         print("Finished in {} iterations".format(iteration))
 
         return FP, P

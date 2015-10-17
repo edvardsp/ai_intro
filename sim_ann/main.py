@@ -7,8 +7,8 @@ eggPuzzles = [egg.EggCarton(5, 5, 2), egg.EggCarton(6, 6, 2),
 		      egg.EggCarton(8, 8, 1), egg.EggCarton(10, 10, 3)]
 
 switchPuzzles = [switch.Switchboard(4, 4, 3, 2, (3,1), (0,3)), 
-				 switch.Switchboard(6, 5, 3, 2, (3,0), (0,3)),
-				 switch.Switchboard(8, 8, 3, 2, (3,1), (0,3))]
+				 switch.Switchboard(6, 5, 3, 2, (5,0), (0,4)),
+				 switch.Switchboard(8, 8, 3, 2, (7,1), (0,7))]
 
 def main():
 	rand.seed()
