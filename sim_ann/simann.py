@@ -2,12 +2,15 @@ import colorama as cr
 import random as rand
 import math as m
 
-
 class SimulatedAnnealing(object):
 
     def __init__(self):
-        self.Tmax = 100
+        self.name = "SimulatedAnnealing Base Class"
         self.environment = None
+
+        self.Tmax = 100
+        self.Tmin = 1e-2
+        self.streakLimit = 1000
 
     def accept(self, current, proposal, temp):
         if proposal < current:
@@ -22,32 +25,40 @@ class SimulatedAnnealing(object):
     def schedule(self, temp):
         raise NotImplemented()
 
-    def printStats(self, *stats):
-        raise NotImplemented()
+    def printStats(self, stats):
+        string  = "\n   " + self.name + "\n\n"
+        string += "          T = {0:.2f}\n"
+        string += "      FPmax = {1:.3f}\n"
+        string += "     Streak = {2}    \n"
+        string += "  Exploring = {3}    \n"
+        string += " Exploiting = {4}    \n"
+        string += "  Iteration = {5}    \n"
+        print(string.format(*stats))
 
     def run(self):
+        # Clear the screen
         print(cr.ansi.clear_screen(), end="")
-
-        iteration = 1
 
         # Initialize the algorithm
         T = self.Tmax
-
-        P = self.environment.moves
+        P = self.environment.getP()
         FP = self.environment.eval()
         Pmax = P
         FPmax = FP
 
+        # Search states
         streak = 0
         exploiting = 0
         exploring = 0
+        iteration = 1
 
-        while T > self.Tmin and streak < 1000 :
+        while T > self.Tmin and streak < self.streakLimit:
             print(cr.Cursor.POS(), end="")
 
             # Generate neighborhood
             neighbors = self.environment.generate()
 
+            # Reset local max
             PnMax  = None
             FPnMax = -float('inf')
 
@@ -62,30 +73,43 @@ class SimulatedAnnealing(object):
                     Pmax = neighbor
                     streak = 0
 
-            # Accept best neighbor or random
-            if not self.accept(FP, FPnMax, T):
-                exploring += 1
-                P = rand.choice(neighbors)
-            else:
+            # If accept, choose best neighbor 
+            if self.accept(FP, FPnMax, T):
                 exploiting += 1
                 P = PnMax
-            self.environment.setMoves(P)
+            # else choose random neighbor
+            else:
+                exploring += 1
+                P = rand.choice(neighbors)
+
+            # Evaluate next search state
+            self.environment.setP(P)
             FP = self.environment.eval()
 
             # Schedule next temperature
             T = self.schedule(T)
 
+            # Print stats
             self.printStats((T, FPmax, streak, exploring, exploiting, iteration))
 
+            # Update iteration
             iteration += 1
+
+            # If a valid solution is found, update streak
             if self.environment.validSolution(Pmax):
                 streak += 1
 
+        # Done with search
+        # Clean the screen
         print(cr.ansi.clear_screen() + cr.Cursor.POS(), end="")
-        self.environment.setMoves(Pmax)
+        # Set the best state we found in our search
+        self.environment.setP(Pmax)
+        # Calculate final score
         FPmax = self.environment.eval(final=True)
+        # Print stats and best environment
         print("Finished in {} iterations".format(iteration))
         print(self.environment)
         print("Score:", FPmax)
 
+        # Return score and state
         return FPmax, Pmax

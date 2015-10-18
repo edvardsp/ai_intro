@@ -34,8 +34,11 @@ class Board(object):
         self.possible = {(x,y) for x in range(M) for y in range(N)}
         self.moves = {coord: rand.choice(tuple(MOVES)) for coord in self.possible}
 
-    def setMoves(self, moves):
-        self.moves = moves
+    def getP(self):
+        return self.moves
+
+    def setP(self, P):
+        self.moves = P
 
     def __repr__(self):
         s = (" " * (self.M*2+2) + "\n") * (self.N+2)
@@ -184,6 +187,8 @@ class Board(object):
 class Switchboard(sa.SimulatedAnnealing):
 
     def __init__(self, M, N, D, W, start, end):
+        super(Switchboard, self).__init__()
+        
         self.M = M
         self.N = N
         self.D = D
@@ -195,8 +200,9 @@ class Switchboard(sa.SimulatedAnnealing):
         self.Tmax = 20.0
         self.Tmin = 2e-2
         self.dT = 0.9991
+        self.streakLimit = 1000
 
-        cr.init(autoreset=True)
+        self.name = self.__repr__()
 
     def __repr__(self):
         string = "Switchboard(M={}, N={}, D={}, W={}, start={}, end={})"
@@ -209,12 +215,3 @@ class Switchboard(sa.SimulatedAnnealing):
             return temp - 3e-3
         else:
             return temp - 5e-4
-
-    def printStats(self, stats):
-        string  = "         T = {0:.2f}\n"
-        string += "     FPmax = {1:.3f}\n"
-        string += "    Streak = {2}    \n"
-        string += " Exploring = {3}    \n"
-        string += "Exploiting = {4}    \n"
-        string += " Iteration = {5}    \n"
-        print(string.format(*stats))

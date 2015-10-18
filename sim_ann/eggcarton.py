@@ -1,49 +1,43 @@
 import random as rand
 import math as m
 
-class Point(object):
+import simann as sa
 
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+class Board(object):
 
-    def __eq__(self, other):
-        return self.x == other.x and self.y == other.y
-
-    def __repr__(self):
-        return "<{},{}>".format(self.x, self.y)
-
-class EggCarton(object):
-    
-    def __init__(self, M, N, K):
+    def __init__(self, M, N, K, eggs):
         self.M = M
         self.N = N
         self.K = K
+        self.eggs = eggs
 
-        self.Tmax = 1.0
-        self.dT = 1e-5
-        self.Ftarget = 0
+        self.board = [(x,y) for y in range(N) for x in range(M)
+            if y * M + x < eggs]
 
     def __repr__(self):
-        return "EggCarton({}, {}, {})".format(self.M, self.N, self.K)
+        string = ""
+        for y in range(self.N):
+            for x in range(self.M):
+                if (x,y) in self.board:
+                    string += 'X '
+                else:
+                    string += '. '
+            string += '\n'
+        return string
 
-    def initBoard(self, n):
-        if n > self.M * self.N:
-            raise ValueError("Too many eggs")
+    def getP(self):
+        return self.board
 
-        left = n
-        board = []
-        for y in range(int(m.ceil(n / self.N))):
-            for x in range(min(left, self.M)):
-                p = Point(x, y)
-                board.append(p)
-            left = max(left - self.M, 0)
+    def setP(self, board):
+        self.board = board
 
-        
+    def eval(self, board=None, final=False):
+        if board is None:
+            board = self.board
 
-        return board
+        STRAIGT_PENALTY = 0.9
+        DIAG_PENALTY    = 0.1
 
-    def evalBoard(self, board):
         # Horizontal
         xs = {k: 0 for k in range(self.M)}
         # Vertical
@@ -54,81 +48,64 @@ class EggCarton(object):
         
         # Compute each point
         for p in board:
-            xs[p.x] += 1
-            ys[p.y] += 1
-            ds1[p.x+p.y] += 1
-            ds2[(self.M+self.N-1)//2+p.x-p.y] += 1 
+            xs[p[0]] += 1
+            ys[p[1]] += 1
+            ds1[p[0]+p[1]] += 1
+            ds2[(self.M+self.N-1)//2+p[0]-p[1]] += 1 
 
         # Calculate objective function value and return
         F = lambda ss: sum(max(v-self.K,0) for v in ss.values())
-        straigt_penalty = 0.9
-        diag_penalty    = 0.1
+        cumsum =  sum(map(F, [xs, ys]))   * STRAIGT_PENALTY
+        cumsum += sum(map(F, [ds1, ds2])) * DIAG_PENALTY
 
-        cumsum =  sum(map(F, [xs, ys]))   * straigt_penalty
-        cumsum += sum(map(F, [ds1, ds2])) * diag_penalty
+        if final:
+            return cumsum
+        else:
+            return -cumsum
 
-        return self.Ftarget - cumsum
+    def validSolution(self, board=None):
+        score = self.eval()
+        return score == 0
 
-    def genNeighbors(self, board):
+    def generate(self):
         newBoards = []
 
         # For each point
-        for p in board:
+        for p in self.board:
             # Generate all neighboring points
             for newy in range(self.N):
-                if newy == p.y:
+                if newy == p[1]:
                     continue
-
-                newp = Point(p.x, newy)
-                if newp not in board:
-                    newboard = board[:]
+                newp = (p[0], newy)
+                if newp not in self.board:
+                    newboard = self.board[:]
                     newboard[newboard.index(p)] = newp
                     newBoards.append(newboard)
 
         return newBoards
 
-    def printBoard(self, board):
-        for y in range(self.N):
-            for x in range(self.M):
-                if Point(x,y) in board:
-                    print('X ', end='')
-                else:
-                    print('. ', end='')
-            print()
 
-    def simulated_annealing(self, numEggs):
-        # Create initial board
-        P = self.initBoard(numEggs)
-        T = self.Tmax
+class EggCarton(sa.SimulatedAnnealing):
+    
+    def __init__(self, M, N, K):
+        super(EggCarton, self).__init__()
 
-        iteration = 0
-        FP = self.evalBoard(P)
+        self.M = M
+        self.N = N
+        self.K = K
 
-        while FP != self.Ftarget and T > self.dT:
-            neighbors = self.genNeighbors(P)
-            Pmax = None
-            FPmax = -float('inf')
+        maxEggs = max(M, N) * K
+        self.environment = Board(M, N, K, maxEggs)
 
-            for neighbor in neighbors:
-                FPn = self.evalBoard(neighbor)
-                if FPn > FPmax:
-                    FPmax = FPn
-                    Pmax = neighbor
+        self.Tmax = 1.0
+        self.Tmin = 1e-2
+        self.dT = 1e-5
+        self.streakLimit = 1
 
-            q = max(0.0, float(FPmax - FP))
-            p = min(1.0, m.e**(-q / T))
-            x = rand.random()
+        self.name = self.__repr__()
 
-            if x > p:
-                P = Pmax
-            else:
-                P = rand.choice(neighbors)
-            FP = self.evalBoard(P)
+    def __repr__(self):
+        return "EggCarton({}, {}, {})".format(self.M, self.N, self.K)
 
-            T -= self.dT
-
-            iteration += 1
-        
-        print("Finished in {} iterations".format(iteration))
-
-        return FP, P
+    def schedule(self, temp):
+        return temp - self.dT

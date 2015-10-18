@@ -1,4 +1,5 @@
 import random as rand
+import colorama as cr
 
 import eggcarton as egg
 import switchboard as switch
@@ -12,6 +13,7 @@ switchPuzzles = [switch.Switchboard(4, 4, 3, 2, (3,1), (0,3)),
 
 def main():
 	rand.seed()
+	cr.init(autoreset=True)
 
 	# Part 1
 	print("The Egg Carton Puzzles", end="\n\n")
@@ -19,14 +21,7 @@ def main():
 	for puzzle in []:
 		print("New puzzle {}!".format(puzzle))
 
-		numEggs = max(puzzle.M, puzzle.N) * puzzle.K 
-		print("Testing for {} eggs".format(numEggs))
-
-		FP, P = puzzle.simulated_annealing(numEggs)
-		if FP != puzzle.Ftarget:
-			print("Failed to find a solution!")
-
-		puzzle.printBoard(P)
+		FP, P = puzzle.run()
 
 		input("Next\n")
 
@@ -36,7 +31,7 @@ def main():
 	for puzzle in switchPuzzles:
 		print("New puzzle: {}".format(puzzle))
 
-		puzzle.run()
+		FP, P = puzzle.run()
 
 		input("Next\n")
 
