@@ -1,6 +1,7 @@
 import colorama as cr
-import math as m
 import random as rand
+
+import simann as sa
 
 UP    = "↑"
 LEFT  = "←"
@@ -8,10 +9,16 @@ DOWN  = "↓"
 RIGHT = "→"
 
 MOVES = {UP, LEFT, DOWN, RIGHT}
+MOVE_CHAR = {UP:    '', 
+             LEFT:  cr.Cursor.BACK(2) + '-', 
+             DOWN:  '', 
+             RIGHT: '-'}
 
 OTHER = {UP:   {LEFT, DOWN, RIGHT}, LEFT:  {UP, DOWN, RIGHT},
          DOWN: {UP,   LEFT, RIGHT}, RIGHT: {UP, LEFT, DOWN}}
-OPPOSITE = {UP: DOWN, LEFT: RIGHT, DOWN: UP, RIGHT: LEFT}
+
+START = lambda c: cr.Fore.GREEN + c + cr.Fore.BLUE
+END   = lambda c: cr.Fore.GREEN + c + cr.Fore.BLUE
 
 class Board(object):
 
@@ -24,32 +31,42 @@ class Board(object):
         self.start = start
         self.end = end
 
-        self.moves = {(x,y): rand.choice(tuple(MOVES)) for x in range(M) for y in range(N)}
+        self.possible = {(x,y) for x in range(M) for y in range(N)}
+        self.moves = {coord: rand.choice(tuple(MOVES)) for coord in self.possible}
 
     def setMoves(self, moves):
         self.moves = moves
 
     def __repr__(self):
-        s = cr.Fore.BLUE + cr.Style.BRIGHT
-        for y in range(self.N):
-            for x in range(self.M):
-                if (x,y) == self.start:
-                    s += cr.Fore.GREEN + self.moves[(x,y)] + cr.Fore.BLUE
+        s = (" " * (self.M*2+2) + "\n") * (self.N+2)
+        s += cr.Fore.BLUE + cr.Style.BRIGHT
 
-                elif (x,y) == self.end:
-                    s += cr.Fore.GREEN + 'E' + cr.Fore.BLUE
+        coord = self.start
+        visited = {coord}
 
-                else:
-                    s += self.moves[(x,y)]
+        while coord != self.end:
+            move = self.moves[coord]
+            pos = (2*coord[0]+2, coord[1]+2)
+            s += cr.Cursor.POS(*pos)
 
-                s += " "
-
-            if y == self.N - 1:
-                s += "\n"
+            if coord == self.start:
+                s += START(move)
+            elif coord == self.start:
+                s += END('E')
+                break
             else:
-                s += "\n\n"
+                s += move
+            s += MOVE_CHAR[move]
 
+            coord = self.moveCoord(coord, move)
+            if not self.validCoord(coord) or coord in visited:
+                break
+            visited.add(coord)
+
+        pos = (2*self.end[0]+2, self.end[1]+2)
+        s += cr.Cursor.POS(*pos) + END('E')
         s += cr.Fore.RESET + cr.Style.NORMAL
+        s += cr.Cursor.POS(1, self.N+2)
         return s
 
     def moveCoord(self, coord, move):
@@ -68,11 +85,12 @@ class Board(object):
             moves = self.moves
 
         # Optimistic optimal value
-        OPT_VALUE = (self.MxN-1) * self.D + min(self.M, self.N) * self.W
+        OPT_VALUE = (self.MxN-1) * self.D + max(self.M, self.N) * self.W
 
         PENALIZE_OUTOFBOUNDS = 100
-        PENALIZE_NOTVISITED = 80
-        PENALIZE_NOFINISH = 60
+        PENALIZE_NOTVISITED = 100
+        PENALIZE_NOFINISH = 100
+        PENALIZE_CROSSING = 60
 
         value = self.W
         visited = set()
@@ -107,6 +125,10 @@ class Board(object):
             currCoord = newCoord
             currDir = newDir
 
+        # Penalize crossing wires
+        if currCoord in visited:
+            value += PENALIZE_CROSSING
+
         # Add wire length, excluding end peg
         value += len(visited) * self.D
 
@@ -119,10 +141,14 @@ class Board(object):
             visited.add(self.end)
 
         # Penalize unvisited pegs
-        numNotvisited = (self.MxN - len(visited))
-        if final and numNotvisited != 0:
+        notVisited = self.possible ^ visited
+        if final and len(notVisited) != 0:
             return float('inf')
-        value += numNotvisited * PENALIZE_NOTVISITED
+        for coord in notVisited:
+            if coord in [(x,y) for x in [0,self.M-1] for y in [0,self.N-1]]:
+                value += PENALIZE_NOTVISITED * 4
+            else:
+                value += PENALIZE_NOTVISITED
 
         if final:
             return value
@@ -155,7 +181,7 @@ class Board(object):
         return out
 
 
-class Switchboard(object):
+class Switchboard(sa.SimulatedAnnealing):
 
     def __init__(self, M, N, D, W, start, end):
         self.M = M
@@ -164,11 +190,11 @@ class Switchboard(object):
         self.W = W
         self.start = start
         self.end = end
-        self.board = Board(M, N, D, W, start, end)
+        self.environment = Board(M, N, D, W, start, end)
 
-        self.Tmax = 30.0
-        self.Tmin = 3e-2
-        self.dT = 0.9995
+        self.Tmax = 20.0
+        self.Tmin = 2e-2
+        self.dT = 0.9991
 
         cr.init(autoreset=True)
 
@@ -176,78 +202,19 @@ class Switchboard(object):
         string = "Switchboard(M={}, N={}, D={}, W={}, start={}, end={})"
         return string.format(self.M, self.N, self.D, self.W, self.start, self.end)
 
-    def accept(self, current, proposal, temp):
-        if proposal < current:
-            return True
+    def schedule(self, temp):
+        if temp > 10.0:
+            return temp - 3e-2
+        elif temp > 1.0:
+            return temp - 3e-3
+        else:
+            return temp - 5e-4
 
-        if temp == 0.0:
-            return False
-
-        prob = m.e ** (- (proposal - current) / temp)
-        return rand.random() > prob
-
-    def simulated_annealing(self):
-        print(cr.ansi.clear_screen(), end="")
-
-        iteration = 1
-
-        # Initialize the algorithm
-        T = self.Tmax
-
-        P = self.board.moves
-        FP = self.board.eval()
-        Pmax = P
-        FPmax = FP
-
-        streak = 0
-        exploiting = 0
-        exploring = 0
-
-        while T > self.Tmin and streak < 1000 :
-            print(cr.Cursor.POS(), end="")
-            print(self.board)
-            neighbors = self.board.generate()
-
-            PnMax  = None
-            FPnMax = -float('inf')
-
-            for neighbor in neighbors:
-                FPn = self.board.eval(neighbor)
-                if FPn > FPnMax:
-                    FPnMax = FPn
-                    PnMax = neighbor
-                if FPn > FPmax:
-                    FPmax = FPn
-                    Pmax = neighbor
-                    streak = 0
-
-            if not self.accept(FP, FPnMax, T):
-                exploring += 1
-                P = rand.choice(neighbors)
-            else:
-                exploiting += 1
-                P = PnMax
-            self.board.setMoves(P)
-            FP = self.board.eval()
-
-            T *= self.dT
-
-            print('         T = {0:.2f}   '.format(T))
-            print('     FPmax = {0:.3f}    '.format(FPmax))
-            print('    Streak = {}    '.format(streak))
-            print(' Exploring = {0:.1f}  '.format(exploring * 100.0 / iteration))
-            print('Exploiting = {0:.1f}  '.format(exploiting * 100.0 / iteration))
-            print(' Iteration = {}'.format(iteration))
-
-            iteration += 1
-            if self.board.validSolution(Pmax):
-                streak += 1
-
-        print(cr.ansi.clear_screen() + cr.Cursor.POS(), end="")
-        self.board.setMoves(Pmax)
-        FPmax = self.board.eval(final=True)
-        print("Finished in {} iterations".format(iteration))
-        print(self.board)
-        print(FPmax)
-
-        return FPmax, Pmax
+    def printStats(self, stats):
+        string  = "         T = {0:.2f}\n"
+        string += "     FPmax = {1:.3f}\n"
+        string += "    Streak = {2}    \n"
+        string += " Exploring = {3}    \n"
+        string += "Exploiting = {4}    \n"
+        string += " Iteration = {5}    \n"
+        print(string.format(*stats))

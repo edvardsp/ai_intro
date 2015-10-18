@@ -19,7 +19,7 @@ def main():
 	for puzzle in []:
 		print("New puzzle {}!".format(puzzle))
 
-		numEggs = puzzle.M * puzzle.K 
+		numEggs = max(puzzle.M, puzzle.N) * puzzle.K 
 		print("Testing for {} eggs".format(numEggs))
 
 		FP, P = puzzle.simulated_annealing(numEggs)
@@ -36,7 +36,7 @@ def main():
 	for puzzle in switchPuzzles:
 		print("New puzzle: {}".format(puzzle))
 
-		puzzle.simulated_annealing()
+		puzzle.run()
 
 		input("Next\n")
 

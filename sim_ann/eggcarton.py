@@ -71,6 +71,7 @@ class EggCarton(object):
 
     def genNeighbors(self, board):
         newBoards = []
+
         # For each point
         for p in board:
             # Generate all neighboring points
@@ -106,7 +107,7 @@ class EggCarton(object):
         while FP != self.Ftarget and T > self.dT:
             neighbors = self.genNeighbors(P)
             Pmax = None
-            FPmax = -1
+            FPmax = -float('inf')
 
             for neighbor in neighbors:
                 FPn = self.evalBoard(neighbor)
