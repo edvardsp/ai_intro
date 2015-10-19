@@ -4,3 +4,4 @@ __pycache__/
 # Libre Office
 *.odt
 *~*
+*.pdf
