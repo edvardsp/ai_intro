@@ -3,23 +3,33 @@ import random as rand
 
 import simann as sa
 
+# Moves used
 UP    = "↑"
 LEFT  = "←"
 DOWN  = "↓"
 RIGHT = "→"
 
+# Set of possible moves
 MOVES = {UP, LEFT, DOWN, RIGHT}
+
+# Dict of trailing wire, used in representation
 MOVE_CHAR = {UP:    '', 
              LEFT:  cr.Cursor.BACK(2) + '-', 
              DOWN:  '', 
              RIGHT: '-'}
 
-OTHER = {UP:   {LEFT, DOWN, RIGHT}, LEFT:  {UP, DOWN, RIGHT},
-         DOWN: {UP,   LEFT, RIGHT}, RIGHT: {UP, LEFT, DOWN}}
+# Returns set of moves excluding given move
+OTHER = {UP:   MOVES ^ UP,   LEFT:  MOVES ^ LEFT,
+         DOWN: MOVES ^ DOWN, RIGHT: MOVES ^ RIGHT}
 
+# Convenient function for representation
 START = lambda c: cr.Fore.GREEN + c + cr.Fore.BLUE
 END   = lambda c: cr.Fore.GREEN + c + cr.Fore.BLUE
 
+"""
+Solution representation.
+Represented as a list of coordinates of the eggs.
+"""
 class Board(object):
 
     def __init__(self, M, N, D, W, start, end):
@@ -33,12 +43,6 @@ class Board(object):
 
         self.possible = {(x,y) for x in range(M) for y in range(N)}
         self.moves = {coord: rand.choice(tuple(MOVES)) for coord in self.possible}
-
-    def getP(self):
-        return self.moves
-
-    def setP(self, P):
-        self.moves = P
 
     def __repr__(self):
         s = (" " * (self.M*2+2) + "\n") * (self.N+2)
@@ -72,17 +76,48 @@ class Board(object):
         s += cr.Cursor.POS(1, self.N+2)
         return s
 
+    """
+    Function used by the simann bibliography.
+    Sets new current state.
+    """
+    def getP(self):
+        return self.moves
+
+    """
+    Function used by the simann bibliography.
+    Gets the current state.
+    """
+    def setP(self, P):
+        self.moves = P
+
+    """
+    Move a given coordinate one unit with the given move
+    """
     def moveCoord(self, coord, move):
         rule = {UP:   (0, -1), LEFT:  (-1, 0),
                 DOWN: (0,  1), RIGHT: ( 1, 0)}
         return tuple(map(sum, zip(coord, rule[move])))
 
+    """
+    Validate if the given coord is valid
+    """
     def validCoord(self, coord):
         return 0 <= coord[0] < self.M and 0 <= coord[1] < self.N
 
+    """
+    Return the manhattan distance between two coordinates
+    """
     def manhattanDist(self, p1, p2):
         return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
+    """
+    Function used by the simann bibliography.
+    Returns the objective value of the given board.
+    If no board is given, return the objective value of the
+    current board.
+    Final gives the final score of the solution when
+    simann algorithm has finished.
+    """
     def objective(self, moves=None, final=False):
         if moves is None:
             moves = self.moves
@@ -90,11 +125,13 @@ class Board(object):
         # Optimistic optimal value
         OPT_VALUE = (self.MxN-1) * self.D + max(self.M, self.N) * self.W
 
+        # Different penalize costs
         PENALIZE_OUTOFBOUNDS = 100
         PENALIZE_NOTVISITED = 100
         PENALIZE_NOFINISH = 100
         PENALIZE_CROSSING = 60
 
+        # Initialize
         value = self.W
         visited = set()
         currCoord = self.start
@@ -158,6 +195,10 @@ class Board(object):
         else:
             return (OPT_VALUE - value) / OPT_VALUE
 
+    """
+    Function used by the simann bibliography.
+    Checks if the given solution is a valid one.
+    """
     def validSolution(self, moves=None):
         if moves is None:
             moves = self.moves
@@ -165,6 +206,11 @@ class Board(object):
         upperLimit = (self.MxN-1) * (self.D + self.W)
         return self.objective(moves, True) < upperLimit
 
+    """
+    Function used by the simann bibliography.
+    Generates a neighborhood of states of the current
+    state on the board.
+    """
     def generate(self):
         out = []
 
@@ -183,7 +229,9 @@ class Board(object):
 
         return out
 
-
+"""
+Switchboard puzzle container
+"""
 class Switchboard(sa.SimulatedAnnealing):
 
     def __init__(self, M, N, D, W, start, end):
@@ -207,6 +255,10 @@ class Switchboard(sa.SimulatedAnnealing):
         string = "Switchboard(M={}, N={}, D={}, W={}, start={}, end={})"
         return string.format(self.M, self.N, self.D, self.W, self.start, self.end)
 
+    """
+    Function used by the simann bibliography.
+    Gives the new temperature when given one.
+    """
     def schedule(self, temp):
         if temp > 10.0:
             return temp - 3e-2

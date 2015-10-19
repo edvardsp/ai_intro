@@ -2,6 +2,9 @@ import colorama as cr
 import random as rand
 import math as m
 
+"""
+Simaluted Annealing base class. Implements the algorithm.
+""" 
 class SimulatedAnnealing(object):
 
     def __init__(self):
@@ -12,6 +15,9 @@ class SimulatedAnnealing(object):
         self.Tmin = 1e-2
         self.streakLimit = 1000
 
+    """
+    Accept algorithm. Standard.
+    """
     def accept(self, current, proposal, temp):
         if proposal < current:
             return True
@@ -22,9 +28,16 @@ class SimulatedAnnealing(object):
         prob = m.e ** (- (proposal - current) / temp)
         return rand.random() > prob
 
+    """
+    Base function of the algorithm. 
+    Must be implemented by the inherited container class.
+    """
     def schedule(self, temp):
         raise NotImplemented()
 
+    """
+    Print stats of the algorithm
+    """
     def printStats(self, stats):
         string  = "\n   " + self.name + "\n\n"
         string += "          T = {0:.2f}\n"
@@ -35,6 +48,9 @@ class SimulatedAnnealing(object):
         string += "  Iteration = {5}    \n"
         print(string.format(*stats))
 
+    """
+    Actual algorithm    
+    """
     def run(self):
         # Clear the screen
         print(cr.ansi.clear_screen(), end="")
@@ -52,6 +68,8 @@ class SimulatedAnnealing(object):
         exploring = 0
         iteration = 1
 
+        # While T is acceptable and a valid solution 
+        # found streak hasn't been broken
         while T > self.Tmin and streak < self.streakLimit:
             print(cr.Cursor.POS(), end="")
 

@@ -3,6 +3,10 @@ import math as m
 
 import simann as sa
 
+"""
+Solution representation.
+Represented as a list of coordinates of the eggs.
+"""
 class Board(object):
 
     def __init__(self, M, N, K, eggs):
@@ -25,12 +29,28 @@ class Board(object):
             string += '\n'
         return string
 
+    """
+    Function used by the simann bibliography.
+    Sets new current state.
+    """
     def getP(self):
         return self.board
 
+    """
+    Function used by the simann bibliography.
+    Gets the current state.
+    """
     def setP(self, board):
         self.board = board
 
+    """
+    Function used by the simann bibliography.
+    Returns the objective value of the given board.
+    If no board is given, return the objective value of the
+    current board.
+    Final gives the final score of the solution when
+    simann algorithm has finished.
+    """
     def objective(self, board=None, final=False):
         if board is None:
             board = self.board
@@ -63,10 +83,19 @@ class Board(object):
         else:
             return -cumsum
 
+    """
+    Function used by the simann bibliography.
+    Checks if the given solution is a valid one.
+    """
     def validSolution(self, board=None):
         score = self.objective()
         return score == 0
 
+    """
+    Function used by the simann bibliography.
+    Generates a neighborhood of states of the current
+    state on the board.
+    """
     def generate(self):
         newBoards = []
 
@@ -84,7 +113,9 @@ class Board(object):
 
         return newBoards
 
-
+"""
+Egg Carton puzzle container
+"""
 class EggCarton(sa.SimulatedAnnealing):
     
     def __init__(self, M, N, K):
@@ -107,5 +138,9 @@ class EggCarton(sa.SimulatedAnnealing):
     def __repr__(self):
         return "EggCarton({}, {}, {})".format(self.M, self.N, self.K)
 
+    """
+    Function used by the simann bibliography.
+    Gives the new temperature when given one.
+    """
     def schedule(self, temp):
         return temp - self.dT
