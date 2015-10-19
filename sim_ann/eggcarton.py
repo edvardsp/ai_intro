@@ -31,7 +31,7 @@ class Board(object):
     def setP(self, board):
         self.board = board
 
-    def eval(self, board=None, final=False):
+    def objective(self, board=None, final=False):
         if board is None:
             board = self.board
 
@@ -64,7 +64,7 @@ class Board(object):
             return -cumsum
 
     def validSolution(self, board=None):
-        score = self.eval()
+        score = self.objective()
         return score == 0
 
     def generate(self):

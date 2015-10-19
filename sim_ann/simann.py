@@ -42,7 +42,7 @@ class SimulatedAnnealing(object):
         # Initialize the algorithm
         T = self.Tmax
         P = self.environment.getP()
-        FP = self.environment.eval()
+        FP = self.environment.objective()
         Pmax = P
         FPmax = FP
 
@@ -64,7 +64,7 @@ class SimulatedAnnealing(object):
 
             # Check each neighbor
             for neighbor in neighbors:
-                FPn = self.environment.eval(neighbor)
+                FPn = self.environment.objective(neighbor)
                 if FPn > FPnMax:
                     FPnMax = FPn
                     PnMax = neighbor
@@ -84,7 +84,7 @@ class SimulatedAnnealing(object):
 
             # Evaluate next search state
             self.environment.setP(P)
-            FP = self.environment.eval()
+            FP = self.environment.objective()
 
             # Schedule next temperature
             T = self.schedule(T)
@@ -105,7 +105,7 @@ class SimulatedAnnealing(object):
         # Set the best state we found in our search
         self.environment.setP(Pmax)
         # Calculate final score
-        FPmax = self.environment.eval(final=True)
+        FPmax = self.environment.objective(final=True)
         # Print stats and best environment
         print("Finished in {} iterations".format(iteration))
         print(self.environment)

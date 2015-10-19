@@ -18,7 +18,7 @@ def main():
 	# Part 1
 	print("The Egg Carton Puzzles", end="\n\n")
 
-	for puzzle in []:
+	for puzzle in eggPuzzles:
 		print("New puzzle {}!".format(puzzle))
 
 		FP, P = puzzle.run()

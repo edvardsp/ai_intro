@@ -83,7 +83,7 @@ class Board(object):
     def manhattanDist(self, p1, p2):
         return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
-    def eval(self, moves=None, final=False):
+    def objective(self, moves=None, final=False):
         if moves is None:
             moves = self.moves
 
@@ -149,7 +149,7 @@ class Board(object):
             return float('inf')
         for coord in notVisited:
             if coord in [(x,y) for x in [0,self.M-1] for y in [0,self.N-1]]:
-                value += PENALIZE_NOTVISITED * 4
+                value += PENALIZE_NOTVISITED * 10
             else:
                 value += PENALIZE_NOTVISITED
 
@@ -163,7 +163,7 @@ class Board(object):
             moves = self.moves
 
         upperLimit = (self.MxN-1) * (self.D + self.W)
-        return self.eval(moves, True) < upperLimit
+        return self.objective(moves, True) < upperLimit
 
     def generate(self):
         out = []
@@ -199,7 +199,6 @@ class Switchboard(sa.SimulatedAnnealing):
 
         self.Tmax = 20.0
         self.Tmin = 2e-2
-        self.dT = 0.9991
         self.streakLimit = 1000
 
         self.name = self.__repr__()
@@ -212,6 +211,6 @@ class Switchboard(sa.SimulatedAnnealing):
         if temp > 10.0:
             return temp - 3e-2
         elif temp > 1.0:
-            return temp - 3e-3
+            return temp - 1e-3
         else:
             return temp - 5e-4
