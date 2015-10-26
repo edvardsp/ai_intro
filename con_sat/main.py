@@ -1,9 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-import copy
-import itertools
+import copy as cp
+import itertools as it
+
+from pprint import pprint
 
 class CSP:
+    
     def __init__(self):
         # self.variables is a list of the variable names in the CSP
         self.variables = []
@@ -15,8 +18,12 @@ class CSP:
         # the variable pair (i, j)
         self.constraints = {}
 
+        self.num_backtrack = 0
+        self.num_backtrack_failed = 0
+
     def add_variable(self, name, domain):
-        """Add a new variable to the CSP. 'name' is the variable name
+        """
+        Add a new variable to the CSP. 'name' is the variable name
         and 'domain' is a list of the legal values for the variable.
         """
         self.variables.append(name)
@@ -24,27 +31,31 @@ class CSP:
         self.constraints[name] = {}
 
     def get_all_possible_pairs(self, a, b):
-        """Get a list of all possible pairs (as tuples) of the values in
+        """
+        Get a list of all possible pairs (as tuples) of the values in
         the lists 'a' and 'b', where the first component comes from list
         'a' and the second component comes from list 'b'.
         """
-        return itertools.product(a, b)
+        return it.product(a, b)
 
     def get_all_arcs(self):
-        """Get a list of all arcs/constraints that have been defined in
+        """
+        Get a list of all arcs/constraints that have been defined in
         the CSP. The arcs/constraints are represented as tuples (i, j),
         indicating a constraint between variable 'i' and 'j'.
         """
-        return [ (i, j) for i in self.constraints for j in self.constraints[i] ]
+        return [(i,j) for i in self.constraints for j in self.constraints[i]]
 
     def get_all_neighboring_arcs(self, var):
-        """Get a list of all arcs/constraints going to/from variable
+        """
+        Get a list of all arcs/constraints going to/from variable
         'var'. The arcs/constraints are represented as in get_all_arcs().
         """
-        return [ (i, var) for i in self.constraints[var] ]
+        return [(i,var) for i in self.constraints[var]]
 
     def add_constraint_one_way(self, i, j, filter_function):
-        """Add a new constraint between variables 'i' and 'j'. The legal
+        """
+        Add a new constraint between variables 'i' and 'j'. The legal
         values are specified by supplying a function 'filter_function',
         that returns True for legal value pairs and False for illegal
         value pairs. This function only adds the constraint one way,
@@ -58,10 +69,11 @@ class CSP:
 
         # Next, filter this list of value pairs through the function
         # 'filter_function', so that only the legal value pairs remain
-        self.constraints[i][j] = filter(lambda value_pair: filter_function(*value_pair), self.constraints[i][j])
+        self.constraints[i][j] = list(filter(lambda value_pair: filter_function(*value_pair), self.constraints[i][j]))
 
     def add_all_different_constraint(self, variables):
-        """Add an Alldiff constraint between all of the variables in the
+        """
+        Add an Alldiff constraint between all of the variables in the
         list 'variables'.
         """
         for (i, j) in self.get_all_possible_pairs(variables, variables):
@@ -69,24 +81,29 @@ class CSP:
                 self.add_constraint_one_way(i, j, lambda x, y: x != y)
 
     def backtracking_search(self):
-        """This functions starts the CSP solver and returns the found
+        """
+        This functions starts the CSP solver and returns the found
         solution.
         """
         # Make a so-called "deep copy" of the dictionary containing the
         # domains of the CSP variables. The deep copy is required to
         # ensure that any changes made to 'assignment' does not have any
         # side effects elsewhere.
-        assignment = copy.deepcopy(self.domains)
+        assignment = cp.deepcopy(self.domains)
 
         # Run AC-3 on all constraints in the CSP, to weed out all of the
         # values that are not arc-consistent to begin with
         self.inference(assignment, self.get_all_arcs())
 
         # Call backtrack with the partial assignment 'assignment'
-        return self.backtrack(assignment)
+        solution = self.backtrack(assignment)
+        print('Num backtrack =', self.num_backtrack)
+        print('Num backtrack failed =', self.num_backtrack_failed)
+        return solution
 
     def backtrack(self, assignment):
-        """The function 'Backtrack' from the pseudocode in the
+        """
+        The function 'Backtrack' from the pseudocode in the
         textbook.
 
         The function is called recursively, with a partial assignment of
@@ -109,29 +126,63 @@ class CSP:
         assignments and inferences that took place in previous
         iterations of the loop.
         """
-        # TODO: IMPLEMENT THIS
-        pass
+        self.num_backtrack += 1
+
+        var = self.select_unassigned_variable(assignment)
+        if var is None:
+            return assignment
+
+        for value in assignment[var]:
+            assigCopy = cp.deepcopy(assignment)
+            assigCopy[var] = [value]
+
+            neighbors = self.get_all_neighboring_arcs(var)
+            if self.inference(assigCopy, neighbors):
+                result = self.backtrack(assigCopy)
+                if result is not None:
+                    return result
+
+        self.num_backtrack_failed += 1
+        return None
 
     def select_unassigned_variable(self, assignment):
-        """The function 'Select-Unassigned-Variable' from the pseudocode
+        """
+        The function 'Select-Unassigned-Variable' from the pseudocode
         in the textbook. Should return the name of one of the variables
         in 'assignment' that have not yet been decided, i.e. whose list
         of legal values has a length greater than one.
         """
-        # TODO: IMPLEMENT THIS
-        pass
+        candidates = tuple(filter(lambda kv: len(kv[1]) > 1, assignment.items()))
+        if len(candidates) == 0:
+            return None
+        min_cand = min(candidates, key=lambda kv: len(kv[1]))
+        return min_cand[0]
 
     def inference(self, assignment, queue):
-        """The function 'AC-3' from the pseudocode in the textbook.
+        """
+        The function 'AC-3' from the pseudocode in the textbook.
         'assignment' is the current partial assignment, that contains
         the lists of legal values for each undecided variable. 'queue'
         is the initial queue of arcs that should be visited.
         """
-        # TODO: IMPLEMENT THIS
-        pass
+        while len(queue) != 0:
+            i, j = queue.pop(0)
+
+            if self.revise(assignment, i, j):
+                Di = assignment[i]
+                if len(Di) == 0:
+                    return False
+
+                for k, _ in self.get_all_neighboring_arcs(i):
+                    if k != i and k != j:
+                        queue.append((k, i))
+
+        return True
+
 
     def revise(self, assignment, i, j):
-        """The function 'Revise' from the pseudocode in the textbook.
+        """
+        The function 'Revise' from the pseudocode in the textbook.
         'assignment' is the current partial assignment, that contains
         the lists of legal values for each undecided variable. 'i' and
         'j' specifies the arc that should be visited. If a value is
@@ -139,11 +190,23 @@ class CSP:
         between i and j, the value should be deleted from i's list of
         legal values in 'assignment'.
         """
-        # TODO: IMPLEMENT THIS
-        pass
+        revised = False
+        Di, Dj = assignment[i], assignment[j]
+        Cij_set = set(self.constraints[i][j])
+
+        for x in Di:
+            Cj_set = {(x,y) for y in Dj if x != y}
+            valid_set = Cij_set & Cj_set
+
+            if len(valid_set) == 0:
+                Di.remove(x)
+                revised = True
+
+        return revised
 
 def create_map_coloring_csp():
-    """Instantiate a CSP representing the map coloring problem from the
+    """
+    Instantiate a CSP representing the map coloring problem from the
     textbook. This can be useful for testing your CSP solver as you
     develop your code.
     """
@@ -151,20 +214,24 @@ def create_map_coloring_csp():
     states = [ 'WA', 'NT', 'Q', 'NSW', 'V', 'SA', 'T' ]
     edges = { 'SA': [ 'WA', 'NT', 'Q', 'NSW', 'V' ], 'NT': [ 'WA', 'Q' ], 'NSW': [ 'Q', 'V' ] }
     colors = [ 'red', 'green', 'blue' ]
+
     for state in states:
         csp.add_variable(state, colors)
+
     for state, other_states in edges.items():
         for other_state in other_states:
             csp.add_constraint_one_way(state, other_state, lambda i, j: i != j)
             csp.add_constraint_one_way(other_state, state, lambda i, j: i != j)
+
     return csp
 
 def create_sudoku_csp(filename):
-    """Instantiate a CSP representing the Sudoku board found in the text
+    """
+    Instantiate a CSP representing the Sudoku board found in the text
     file named 'filename' in the current directory.
     """
     csp = CSP()
-    board = map(lambda x: x.strip(), open(filename, 'r'))
+    board = tuple(map(lambda x: x.strip(), open(filename, 'r')))
 
     for row in range(9):
         for col in range(9):
@@ -175,8 +242,10 @@ def create_sudoku_csp(filename):
 
     for row in range(9):
         csp.add_all_different_constraint([ '%d-%d' % (row, col) for col in range(9) ])
+
     for col in range(9):
         csp.add_all_different_constraint([ '%d-%d' % (row, col) for row in range(9) ])
+
     for box_row in range(3):
         for box_col in range(3):
             cells = []
@@ -188,15 +257,39 @@ def create_sudoku_csp(filename):
     return csp
 
 def print_sudoku_solution(solution):
-    """Convert the representation of a Sudoku solution as returned from
+    """
+    Convert the representation of a Sudoku solution as returned from
     the method CSP.backtracking_search(), into a human readable
     representation.
     """
     for row in range(9):
         for col in range(9):
-            print solution['%d-%d' % (row, col)][0],
+            pair = '%d-%d' % (row, col)
+            if len(solution[pair]) > 1:
+                print('.', end=" ")
+            else:
+                print(solution['%d-%d' % (row, col)][0], end=" ")
             if col == 2 or col == 5:
-                print '|',
-        print
+                print('|', end=" ")
+        print()
         if row == 2 or row == 5:
-            print '------+-------+------'
+            print('------+-------+------')
+
+Boards = ['easy.txt', 'hard.txt', 'medium.txt', 'veryhard.txt']
+Hard_boards = ['almostlockedset.txt', 'suedecoq.txt', 'escargot.txt', 'artoinkala.txt']
+
+def main():
+    for board in Boards: 
+        print('Board ::', board)
+        csp1 = create_sudoku_csp('boards/' + board)
+        print_sudoku_solution(csp1.backtracking_search())
+
+        input('Next\n')
+
+    csp2 = create_map_coloring_csp()
+    result = csp2.backtracking_search()
+    print(result)
+
+
+if __name__ == '__main__':
+    main()
