@@ -5,6 +5,7 @@ import itertools as it
 
 from pprint import pprint
 
+
 class CSP:
 
     def __init__(self):
@@ -45,14 +46,14 @@ class CSP:
         the CSP. The arcs/constraints are represented as tuples (i, j),
         indicating a constraint between variable 'i' and 'j'.
         """
-        return [(i,j) for i in self.constraints for j in self.constraints[i]]
+        return [(i, j) for i in self.constraints for j in self.constraints[i]]
 
     def get_all_neighboring_arcs(self, var):
         """
         Get a list of all arcs/constraints going to/from variable
         'var'. The arcs/constraints are represented as in get_all_arcs().
         """
-        return [(i,var) for i in self.constraints[var]]
+        return [(i, var) for i in self.constraints[var]]
 
     def add_constraint_one_way(self, i, j, filter_function):
         """
@@ -64,13 +65,18 @@ class CSP:
         to add the constraint the other way, j -> i, as all constraints
         are supposed to be two-way connections!
         """
-        if not j in self.constraints[i]:
-            # First, get a list of all possible pairs of values between variables i and j
-            self.constraints[i][j] = self.get_all_possible_pairs(self.domains[i], self.domains[j])
+        if j not in self.constraints[i]:
+            # First, get a list of all possible pairs
+            # of values between variables i and j
+            Di, Dj = self.domains[i], self.domains[j]
+            self.constraints[i][j] = self.get_all_possible_pairs(Di, Dj)
+
+        def aux(value_pair):
+            return filter_function(*value_pair)
 
         # Next, filter this list of value pairs through the function
         # 'filter_function', so that only the legal value pairs remain
-        self.constraints[i][j] = tuple(filter(lambda value_pair: filter_function(*value_pair), self.constraints[i][j]))
+        self.constraints[i][j] = tuple(filter(aux, self.constraints[i][j]))
 
     def add_all_different_constraint(self, variables):
         """
@@ -164,8 +170,10 @@ class CSP:
         in 'assignment' that have not yet been decided, i.e. whose list
         of legal values has a length greater than one.
         """
+        def domainMoreThanOne(kv):
+            return len(kv[1]) > 1
         # Possible candidates with domains larger than 1
-        candidates = tuple(filter(lambda kv: len(kv[1]) > 1, assignment.items()))
+        candidates = tuple(filter(domainMoreThanOne, assignment.items()))
         # If there are no candidates, return None
         if len(candidates) == 0:
             return None
@@ -225,7 +233,7 @@ class CSP:
         # For all values in the domain i
         for x in Di:
             # Create the set of all possible values for j
-            Cj_set = {(x,y) for y in Dj if x != y}
+            Cj_set = {(x, y) for y in Dj if x != y}
             # The set which is the union of Cij and Cj
             valid_set = Cij_set & Cj_set
 
@@ -239,6 +247,7 @@ class CSP:
         # Return if some domains have been altered
         return revised
 
+
 def create_map_coloring_csp():
     """
     Instantiate a CSP representing the map coloring problem from the
@@ -246,9 +255,11 @@ def create_map_coloring_csp():
     develop your code.
     """
     csp = CSP()
-    states = [ 'WA', 'NT', 'Q', 'NSW', 'V', 'SA', 'T' ]
-    edges = { 'SA': [ 'WA', 'NT', 'Q', 'NSW', 'V' ], 'NT': [ 'WA', 'Q' ], 'NSW': [ 'Q', 'V' ] }
-    colors = [ 'red', 'green', 'blue' ]
+    states = ['WA', 'NT', 'Q', 'NSW', 'V', 'SA', 'T']
+    edges = {'SA': ['WA', 'NT', 'Q', 'NSW', 'V'],
+             'NT': ['WA', 'Q'],
+             'NSW': ['Q', 'V']}
+    colors = ['red', 'green', 'blue']
 
     for state in states:
         csp.add_variable(state, colors)
@@ -259,6 +270,7 @@ def create_map_coloring_csp():
             csp.add_constraint_one_way(other_state, state, lambda i, j: i != j)
 
     return csp
+
 
 def create_sudoku_csp(filename):
     """
@@ -276,10 +288,12 @@ def create_sudoku_csp(filename):
                 csp.add_variable('%d-%d' % (row, col), [board[row][col]])
 
     for row in range(9):
-        csp.add_all_different_constraint(['%d-%d' % (row, col) for col in range(9)])
+        pairs = ['%d-%d' % (row, col) for col in range(9)]
+        csp.add_all_different_constraint(pairs)
 
     for col in range(9):
-        csp.add_all_different_constraint(['%d-%d' % (row, col) for row in range(9)])
+        pairs = ['%d-%d' % (row, col) for row in range(9)]
+        csp.add_all_different_constraint(pairs)
 
     for box_row in range(3):
         for box_col in range(3):
@@ -290,6 +304,7 @@ def create_sudoku_csp(filename):
             csp.add_all_different_constraint(cells)
 
     return csp
+
 
 def print_sudoku_solution(solution):
     """
@@ -303,10 +318,10 @@ def print_sudoku_solution(solution):
     aux_board = "\n".join(holdr for _ in range(3))
     board = delim.join(aux_board for _ in range(3))
 
-    pairs = ("%d-%d" % (row,col) for row in range(9) for col in range(9))
+    pairs = ("%d-%d" % (row, col) for row in range(9) for col in range(9))
     output = (
-        solution[pair][0] 
-        if len(solution[pair]) == 1 
+        solution[pair][0]
+        if len(solution[pair]) == 1
         else '.'
         for pair in pairs
     )
@@ -315,11 +330,13 @@ def print_sudoku_solution(solution):
 
 # Possible sudoku boards
 Boards = ['easy.txt', 'hard.txt', 'medium.txt', 'veryhard.txt']
-Hard_boards = ['almostlockedset.txt', 'suedecoq.txt', 'escargot.txt', 'artoinkala.txt']
+Hard_boards = ['almostlockedset.txt', 'suedecoq.txt',
+               'escargot.txt', 'artoinkala.txt']
+
 
 def main():
     # For all boards
-    for board in Boards: 
+    for board in Boards:
         print('Board ::', board)
 
         # Create the CSP for the sudoku board
