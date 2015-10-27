@@ -2,10 +2,12 @@ import colorama as cr
 import random as rand
 import math as m
 
-"""
-Simaluted Annealing base class. Implements the algorithm.
-""" 
+
 class SimulatedAnnealing(object):
+
+    """
+    Simaluted Annealing base class. Implements the algorithm.
+    """
 
     def __init__(self):
         self.name = "SimulatedAnnealing Base Class"
@@ -15,10 +17,11 @@ class SimulatedAnnealing(object):
         self.Tmin = 1e-2
         self.streakLimit = 1000
 
-    """
-    Accept algorithm. Standard.
-    """
     def accept(self, current, proposal, temp):
+        """
+        Accept algorithm. Standard.
+        """
+
         if proposal < current:
             return True
 
@@ -28,18 +31,18 @@ class SimulatedAnnealing(object):
         prob = m.e ** (- (proposal - current) / temp)
         return rand.random() > prob
 
-    """
-    Base function of the algorithm. 
-    Must be implemented by the inherited container class.
-    """
     def schedule(self, temp):
+        """
+        Base function of the algorithm.
+        Must be implemented by the inherited container class.
+        """
         raise NotImplemented()
 
-    """
-    Print stats of the algorithm
-    """
     def printStats(self, stats):
-        string  = "\n   " + self.name + "\n\n"
+        """
+        Print stats of the algorithm
+        """
+        string = "\n   " + self.name + "\n\n"
         string += "          T = {0:.2f}\n"
         string += "      FPmax = {1:.3f}\n"
         string += "     Streak = {2}    \n"
@@ -48,10 +51,10 @@ class SimulatedAnnealing(object):
         string += "  Iteration = {5}    \n"
         print(string.format(*stats))
 
-    """
-    Actual algorithm    
-    """
     def run(self):
+        """
+        Actual algorithm
+        """
         # Clear the screen
         print(cr.ansi.clear_screen(), end="")
 
@@ -68,7 +71,7 @@ class SimulatedAnnealing(object):
         exploring = 0
         iteration = 1
 
-        # While T is acceptable and a valid solution 
+        # While T is acceptable and a valid solution
         # found streak hasn't been broken
         while T > self.Tmin and streak < self.streakLimit:
             print(cr.Cursor.POS(), end="")
@@ -77,7 +80,7 @@ class SimulatedAnnealing(object):
             neighbors = self.environment.generate()
 
             # Reset local max
-            PnMax  = None
+            PnMax = None
             FPnMax = -float('inf')
 
             # Check each neighbor
@@ -91,7 +94,7 @@ class SimulatedAnnealing(object):
                     Pmax = neighbor
                     streak = 0
 
-            # If accept, choose best neighbor 
+            # If accept, choose best neighbor
             if self.accept(FP, FPnMax, T):
                 exploiting += 1
                 P = PnMax
@@ -108,7 +111,8 @@ class SimulatedAnnealing(object):
             T = self.schedule(T)
 
             # Print stats
-            self.printStats((T, FPmax, streak, exploring, exploiting, iteration))
+            self.printStats(
+                (T, FPmax, streak, exploring, exploiting, iteration))
 
             # Update iteration
             iteration += 1

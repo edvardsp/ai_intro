@@ -4,33 +4,31 @@ import random as rand
 import simann as sa
 
 # Moves used
-UP    = "↑"
-LEFT  = "←"
-DOWN  = "↓"
+UP = "↑"
+LEFT = "←"
+DOWN = "↓"
 RIGHT = "→"
 
 # Set of possible moves
 MOVES = {UP, LEFT, DOWN, RIGHT}
 
 # Dict of trailing wire, used in representation
-MOVE_CHAR = {UP:    '', 
-             LEFT:  cr.Cursor.BACK(2) + '-', 
-             DOWN:  '', 
+MOVE_CHAR = {UP:    '',
+             LEFT:  cr.Cursor.BACK(2) + '-',
+             DOWN:  '',
              RIGHT: '-'}
 
 # Returns set of moves excluding given move
 OTHER = {UP:   MOVES ^ UP,   LEFT:  MOVES ^ LEFT,
          DOWN: MOVES ^ DOWN, RIGHT: MOVES ^ RIGHT}
 
-# Convenient function for representation
-START = lambda c: cr.Fore.GREEN + c + cr.Fore.BLUE
-END   = lambda c: cr.Fore.GREEN + c + cr.Fore.BLUE
 
-"""
-Solution representation.
-Represented as a list of coordinates of the eggs.
-"""
 class Board(object):
+
+    """
+    Solution representation.
+    Represented as a list of coordinates of the eggs.
+    """
 
     def __init__(self, M, N, D, W, start, end):
         self.M = M
@@ -41,8 +39,9 @@ class Board(object):
         self.start = start
         self.end = end
 
-        self.possible = {(x,y) for x in range(M) for y in range(N)}
-        self.moves = {coord: rand.choice(tuple(MOVES)) for coord in self.possible}
+        self.possible = {(x, y) for x in range(M) for y in range(N)}
+        self.moves = {coord: rand.choice(tuple(MOVES))
+                      for coord in self.possible}
 
     def __repr__(self):
         s = (" " * (self.M*2+2) + "\n") * (self.N+2)
@@ -57,9 +56,9 @@ class Board(object):
             s += cr.Cursor.POS(*pos)
 
             if coord == self.start:
-                s += START(move)
+                s += cr.Fore.GREEN + move + cr.Fore.BLUE
             elif coord == self.start:
-                s += END('E')
+                s += cr.Fore.GREEN + 'E' + cr.Fore.BLUE
                 break
             else:
                 s += move
@@ -71,54 +70,54 @@ class Board(object):
             visited.add(coord)
 
         pos = (2*self.end[0]+2, self.end[1]+2)
-        s += cr.Cursor.POS(*pos) + END('E')
+        s += cr.Cursor.POS(*pos) + cr.Fore.GREEN + 'E' + cr.Fore.BLUE
         s += cr.Fore.RESET + cr.Style.NORMAL
         s += cr.Cursor.POS(1, self.N+2)
         return s
 
-    """
-    Function used by the simann bibliography.
-    Sets new current state.
-    """
     def getP(self):
+        """
+        Function used by the simann bibliography.
+        Sets new current state.
+        """
         return self.moves
 
-    """
-    Function used by the simann bibliography.
-    Gets the current state.
-    """
     def setP(self, P):
+        """
+        Function used by the simann bibliography.
+        Gets the current state.
+        """
         self.moves = P
 
-    """
-    Move a given coordinate one unit with the given move
-    """
     def moveCoord(self, coord, move):
-        rule = {UP:   (0, -1), LEFT:  (-1, 0),
-                DOWN: (0,  1), RIGHT: ( 1, 0)}
+        """
+        Move a given coordinate one unit with the given move
+        """
+        rule = {UP: (0, -1), LEFT: (-1, 0),
+                DOWN: (0, 1), RIGHT: (1, 0)}
         return tuple(map(sum, zip(coord, rule[move])))
 
-    """
-    Validate if the given coord is valid
-    """
     def validCoord(self, coord):
+        """
+        Validate if the given coord is valid
+        """
         return 0 <= coord[0] < self.M and 0 <= coord[1] < self.N
 
-    """
-    Return the manhattan distance between two coordinates
-    """
     def manhattanDist(self, p1, p2):
+        """
+        Return the manhattan distance between two coordinates
+        """
         return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
-    """
-    Function used by the simann bibliography.
-    Returns the objective value of the given board.
-    If no board is given, return the objective value of the
-    current board.
-    Final gives the final score of the solution when
-    simann algorithm has finished.
-    """
     def objective(self, moves=None, final=False):
+        """
+        Function used by the simann bibliography.
+        Returns the objective value of the given board.
+        If no board is given, return the objective value of the
+        current board.
+        Final gives the final score of the solution when
+        simann algorithm has finished.
+        """
         if moves is None:
             moves = self.moves
 
@@ -156,7 +155,7 @@ class Board(object):
             streak += 1
             newDir = moves[newCoord]
             if newCoord != self.end and newDir != currDir:
-                value += self.W 
+                value += self.W
                 if not final:
                     value += (max(self.M, self.N) - streak) * 2
                     streak = 0
@@ -185,7 +184,7 @@ class Board(object):
         if final and len(notVisited) != 0:
             return float('inf')
         for coord in notVisited:
-            if coord in [(x,y) for x in [0,self.M-1] for y in [0,self.N-1]]:
+            if coord in [(x, y) for x in [0, self.M-1] for y in [0, self.N-1]]:
                 value += PENALIZE_NOTVISITED * 10
             else:
                 value += PENALIZE_NOTVISITED
@@ -195,28 +194,28 @@ class Board(object):
         else:
             return (OPT_VALUE - value) / OPT_VALUE
 
-    """
-    Function used by the simann bibliography.
-    Checks if the given solution is a valid one.
-    """
     def validSolution(self, moves=None):
+        """
+        Function used by the simann bibliography.
+        Checks if the given solution is a valid one.
+        """
         if moves is None:
             moves = self.moves
 
         upperLimit = (self.MxN-1) * (self.D + self.W)
         return self.objective(moves, True) < upperLimit
 
-    """
-    Function used by the simann bibliography.
-    Generates a neighborhood of states of the current
-    state on the board.
-    """
     def generate(self):
+        """
+        Function used by the simann bibliography.
+        Generates a neighborhood of states of the current
+        state on the board.
+        """
         out = []
 
         for y in range(self.N):
             for x in range(self.M):
-                coord = (x,y)
+                coord = (x, y)
                 if coord == self.end:
                     continue
 
@@ -229,14 +228,16 @@ class Board(object):
 
         return out
 
-"""
-Switchboard puzzle container
-"""
+
 class Switchboard(sa.SimulatedAnnealing):
+
+    """
+    Switchboard puzzle container
+    """
 
     def __init__(self, M, N, D, W, start, end):
         super(Switchboard, self).__init__()
-        
+
         self.M = M
         self.N = N
         self.D = D
@@ -253,13 +254,14 @@ class Switchboard(sa.SimulatedAnnealing):
 
     def __repr__(self):
         string = "Switchboard(M={}, N={}, D={}, W={}, start={}, end={})"
-        return string.format(self.M, self.N, self.D, self.W, self.start, self.end)
+        return string.format(self.M, self.N, self.D,
+                             self.W, self.start, self.end)
 
-    """
-    Function used by the simann bibliography.
-    Gives the new temperature when given one.
-    """
     def schedule(self, temp):
+        """
+        Function used by the simann bibliography.
+        Gives the new temperature when given one.
+        """
         if temp > 10.0:
             return temp - 3e-2
         elif temp > 1.0:
