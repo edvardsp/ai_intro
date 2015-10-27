@@ -13,34 +13,37 @@ from colorama import init, Fore, Back, Cursor
 
 # Which color for which node.
 # Used with the colorama library.
-color = {'A' : Fore.CYAN,
-         'B' : Fore.YELLOW,
-         '.' : Back.WHITE,
-         '#' : Back.BLACK,
-         'w' : Back.BLUE,
-         'm' : Back.BLACK,
-         'f' : Back.GREEN,
-         'g' : Back.YELLOW,
-         'r' : Back.WHITE}
+color = {'A': Fore.CYAN,
+         'B': Fore.YELLOW,
+         '.': Back.WHITE,
+         '#': Back.BLACK,
+         'w': Back.BLUE,
+         'm': Back.BLACK,
+         'f': Back.GREEN,
+         'g': Back.YELLOW,
+         'r': Back.WHITE}
 
 # Cost of each node.
-cost = {'A' : 1,
-        'B' : 1,
-        '.' : 1,
-        '#' : float('Inf'),
-        'w' : 100,
-        'm' : 50,
-        'f' : 10,
-        'g' : 5,
-        'r' : 1}
+cost = {'A': 1,
+        'B': 1,
+        '.': 1,
+        '#': float('Inf'),
+        'w': 100,
+        'm': 50,
+        'f': 10,
+        'g': 5,
+        'r': 1}
 
-# Base class which defines common variables and 
+# Base class which defines common variables and
 # functions for each of the three search algorithms,
 # A*, BFS and Dijkstra.
-# 
+#
 # Nodes are defined as a 2-tuple, (x, y), which holds
-# the x and y coordinate. 
+# the x and y coordinate.
+
+
 class SearchBase(object):
+
     def __init__(self):
         self.clear()
 
@@ -85,16 +88,16 @@ class SearchBase(object):
                 if char == 'A':
                     self.start = node
                 elif char == 'B':
-                    self.goal = node 
+                    self.goal = node
 
         # Store size of the board for printing
-        self.x_size = len(data[0]) 
+        self.x_size = len(data[0])
         self.y_size = len(data)
 
-    # Calculates the heuristic score of a node, which in 
+    # Calculates the heuristic score of a node, which in
     # this case is calculated as the manhattan distance
     def heuristic(self, node):
-        value = abs(node[0] - self.goal[0]) + abs(node[1] - self.goal[1]) 
+        value = abs(node[0] - self.goal[0]) + abs(node[1] - self.goal[1])
         return value
 
     # Return the node from open_set with the lowest F-score
@@ -135,7 +138,7 @@ class SearchBase(object):
 
     # Prints the board.
     # Param show_sets prints the nodes in open_set
-    # and closed_set if True. 
+    # and closed_set if True.
     # Param path prints the nodes in the list
     # with special chars.
     def printBoard(self, show_sets=True, path=[]):
@@ -150,7 +153,6 @@ class SearchBase(object):
                 else:
                     char = '#'
                 c = color[char]
-
 
                 # Show Start and Goal node specially
                 if n == self.start or n == self.goal:
@@ -188,14 +190,15 @@ class SearchBase(object):
 class Astar(SearchBase):
 
     # Actual algorithm, returns path of solution
+
     def findPath(self, showprog=False):
         # Init of sets and score dicts
         self.open_set.add(self.start)
 
-        self.g[self.start] = 0;
+        self.g[self.start] = 0
         self.f[self.start] = self.g[self.start] + self.heuristic(self.start)
 
-        # Shows iteration number 
+        # Shows iteration number
         itr = 1
 
         # Main loop, loop while nodes to visit
@@ -210,7 +213,7 @@ class Astar(SearchBase):
 
             # Move current from open to closed set
             self.open_set.remove(curr)
-            self.closed_set.add(curr)            
+            self.closed_set.add(curr)
 
             # Check all neighbors to current
             for neighbor in self.generateNeighbors(curr):
@@ -231,7 +234,8 @@ class Astar(SearchBase):
                     # Store new path, and G- and F-score
                     self.came_from[neighbor] = curr
                     self.g[neighbor] = tmp_g
-                    self.f[neighbor] = self.g[neighbor] + self.heuristic(neighbor)
+                    self.f[neighbor] = self.g[
+                        neighbor] + self.heuristic(neighbor)
 
                     # If not in open set, add
                     if neighbor not in self.open_set:
@@ -243,7 +247,7 @@ class Astar(SearchBase):
                 print("Iteration {}".format(itr))
                 itr += 1
                 time.sleep(0.05)
-        
+
         # If no more nodes to visit and no goal found, return empty path
         return []
 
@@ -254,16 +258,17 @@ class Astar(SearchBase):
 class BreadthFirstSearch(SearchBase):
 
     # Actual algorithm, returns path of solution
+
     def findPath(self, showprog=False):
         # Init of FIFO and score dicts
         self.open_set = [self.start]
 
-        self.g[self.start] = 0;
+        self.g[self.start] = 0
         self.f[self.start] = self.g[self.start] + self.heuristic(self.start)
 
-        # Shows iteration number 
+        # Shows iteration number
         itr = 1
-        
+
         # Main loop, loop while nodes to visit
         while self.open_set != list():
             # Current node is the first node in the list
@@ -274,7 +279,7 @@ class BreadthFirstSearch(SearchBase):
                 return self.reconstructPath(curr)
 
             # Add current to the closed set
-            self.closed_set.add(curr)            
+            self.closed_set.add(curr)
 
             # Check all neighbors to current
             for neighbor in self.generateNeighbors(curr):
@@ -295,7 +300,8 @@ class BreadthFirstSearch(SearchBase):
                     # Store new path, and G- and F-score
                     self.came_from[neighbor] = curr
                     self.g[neighbor] = tmp_g
-                    self.f[neighbor] = self.g[neighbor] + self.heuristic(neighbor)
+                    self.f[neighbor] = self.g[
+                        neighbor] + self.heuristic(neighbor)
 
                     # If not in open set, add
                     if neighbor not in self.open_set:
@@ -307,7 +313,7 @@ class BreadthFirstSearch(SearchBase):
                 print("Iteration {}".format(itr))
                 itr += 1
                 time.sleep(0.05)
-            
+
         # If no more nodes to visit and no goal found, return empty path
         return []
 
@@ -318,14 +324,15 @@ class BreadthFirstSearch(SearchBase):
 class Dijkstra(SearchBase):
 
     # Actual algorithm, returns path of solution
+
     def findPath(self, showprog=False):
         # Init of sets and score dicts
         self.open_set.add(self.start)
 
-        self.g[self.start] = 0;
+        self.g[self.start] = 0
         self.f[self.start] = self.g[self.start] + self.heuristic(self.start)
 
-        # Shows iteration number 
+        # Shows iteration number
         itr = 1
 
         # Main loop, loop while nodes to visit
@@ -340,7 +347,7 @@ class Dijkstra(SearchBase):
 
             # Move current from open to closed set
             self.open_set.remove(curr)
-            self.closed_set.add(curr)            
+            self.closed_set.add(curr)
 
             # Check all neighbors to current
             for neighbor in self.generateNeighbors(curr):
@@ -361,7 +368,8 @@ class Dijkstra(SearchBase):
                     # Store new path, and G- and F-score
                     self.came_from[neighbor] = curr
                     self.g[neighbor] = tmp_g
-                    self.f[neighbor] = self.g[neighbor] + self.heuristic(neighbor)
+                    self.f[neighbor] = self.g[
+                        neighbor] + self.heuristic(neighbor)
 
                     # If not in open set, add
                     if neighbor not in self.open_set:
@@ -373,7 +381,7 @@ class Dijkstra(SearchBase):
                 print("Iteration {}".format(itr))
                 itr += 1
                 time.sleep(0.05)
-            
+
         # If no more nodes to visit and goal not found, return empty path
         return []
 
@@ -428,4 +436,4 @@ if __name__ == '__main__':
         do_task(boards_1, algo, show_prog)
         do_task(boards_2, algo, show_prog)
         # Some extra boards
-        #do_task(boards_extra, algo, show_prog)
+        # do_task(boards_extra, algo, show_prog)
