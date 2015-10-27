@@ -6,7 +6,7 @@ import itertools as it
 from pprint import pprint
 
 class CSP:
-    
+
     def __init__(self):
         # self.variables is a list of the variable names in the CSP
         self.variables = []
@@ -18,6 +18,7 @@ class CSP:
         # the variable pair (i, j)
         self.constraints = {}
 
+        # Variables to record the number of backtracks and failed backtracks
         self.num_backtrack = 0
         self.num_backtrack_failed = 0
 
@@ -69,7 +70,7 @@ class CSP:
 
         # Next, filter this list of value pairs through the function
         # 'filter_function', so that only the legal value pairs remain
-        self.constraints[i][j] = list(filter(lambda value_pair: filter_function(*value_pair), self.constraints[i][j]))
+        self.constraints[i][j] = tuple(filter(lambda value_pair: filter_function(*value_pair), self.constraints[i][j]))
 
     def add_all_different_constraint(self, variables):
         """
@@ -126,22 +127,33 @@ class CSP:
         assignments and inferences that took place in previous
         iterations of the loop.
         """
+        # Increment the number of backtrack calls
         self.num_backtrack += 1
 
+        # Get the next box to check on
         var = self.select_unassigned_variable(assignment)
+        # If there is no box to check, result found
         if var is None:
             return assignment
 
+        # For all possible values in the box
         for value in assignment[var]:
+            # Create a copy of the assignment
             assigCopy = cp.deepcopy(assignment)
+            # Assign the value to the box
             assigCopy[var] = [value]
 
+            # Generate all arcs from the box
             neighbors = self.get_all_neighboring_arcs(var)
+            # If the board is consistent
             if self.inference(assigCopy, neighbors):
+                # Recursive call with the assignment copy
                 result = self.backtrack(assigCopy)
+                # If the result is valid, return result
                 if result is not None:
                     return result
 
+        # If no values generated a valid board, then backtrack
         self.num_backtrack_failed += 1
         return None
 
@@ -152,9 +164,12 @@ class CSP:
         in 'assignment' that have not yet been decided, i.e. whose list
         of legal values has a length greater than one.
         """
+        # Possible candidates with domains larger than 1
         candidates = tuple(filter(lambda kv: len(kv[1]) > 1, assignment.items()))
+        # If there are no candidates, return None
         if len(candidates) == 0:
             return None
+        # Find the candidate with minimum domain and return variable
         min_cand = min(candidates, key=lambda kv: len(kv[1]))
         return min_cand[0]
 
@@ -165,20 +180,30 @@ class CSP:
         the lists of legal values for each undecided variable. 'queue'
         is the initial queue of arcs that should be visited.
         """
+        # While the queue is not empty
         while len(queue) != 0:
+            # Pop the first item in the queue
             i, j = queue.pop(0)
 
+            # Update the arc
+            # If the arc is valid, update the queue
             if self.revise(assignment, i, j):
+                # Check the domain
                 Di = assignment[i]
+                # If the domain is empty, the arc does not
+                # create a valid board
                 if len(Di) == 0:
+                    # The board is not consistent
                     return False
 
+                # If the domain is not empty,
+                # add all intermediate arcs to the queue
                 for k, _ in self.get_all_neighboring_arcs(i):
                     if k != i and k != j:
                         queue.append((k, i))
 
+        # If all arcs create a valid board, then it is consistent
         return True
-
 
     def revise(self, assignment, i, j):
         """
@@ -190,18 +215,28 @@ class CSP:
         between i and j, the value should be deleted from i's list of
         legal values in 'assignment'.
         """
+        # Variable to check if some domains have been altered
         revised = False
+        # Domains for i and j
         Di, Dj = assignment[i], assignment[j]
+        # Set of possible solutions for arc i and j
         Cij_set = set(self.constraints[i][j])
 
+        # For all values in the domain i
         for x in Di:
+            # Create the set of all possible values for j
             Cj_set = {(x,y) for y in Dj if x != y}
+            # The set which is the union of Cij and Cj
             valid_set = Cij_set & Cj_set
 
+            # If it is empty then there does not
+            # exist a value pair which satisfies the arc
             if len(valid_set) == 0:
+                # Remove the value x from the domain i
                 Di.remove(x)
                 revised = True
 
+        # Return if some domains have been altered
         return revised
 
 def create_map_coloring_csp():
@@ -238,13 +273,13 @@ def create_sudoku_csp(filename):
             if board[row][col] == '0':
                 csp.add_variable('%d-%d' % (row, col), map(str, range(1, 10)))
             else:
-                csp.add_variable('%d-%d' % (row, col), [ board[row][col] ])
+                csp.add_variable('%d-%d' % (row, col), [board[row][col]])
 
     for row in range(9):
-        csp.add_all_different_constraint([ '%d-%d' % (row, col) for col in range(9) ])
+        csp.add_all_different_constraint(['%d-%d' % (row, col) for col in range(9)])
 
     for col in range(9):
-        csp.add_all_different_constraint([ '%d-%d' % (row, col) for row in range(9) ])
+        csp.add_all_different_constraint(['%d-%d' % (row, col) for row in range(9)])
 
     for box_row in range(3):
         for box_col in range(3):
@@ -262,34 +297,46 @@ def print_sudoku_solution(solution):
     the method CSP.backtracking_search(), into a human readable
     representation.
     """
-    for row in range(9):
-        for col in range(9):
-            pair = '%d-%d' % (row, col)
-            if len(solution[pair]) > 1:
-                print('.', end=" ")
-            else:
-                print(solution['%d-%d' % (row, col)][0], end=" ")
-            if col == 2 or col == 5:
-                print('|', end=" ")
-        print()
-        if row == 2 or row == 5:
-            print('------+-------+------')
+    holdr = "{} {} {} | {} {} {} | {} {} {}"
+    delim = "\n------+-------+------\n"
 
+    aux_board = "\n".join(holdr for _ in range(3))
+    board = delim.join(aux_board for _ in range(3))
+
+    pairs = ("%d-%d" % (row,col) for row in range(9) for col in range(9))
+    output = (
+        solution[pair][0] 
+        if len(solution[pair]) == 1 
+        else '.'
+        for pair in pairs
+    )
+
+    print(board.format(*output))
+
+# Possible sudoku boards
 Boards = ['easy.txt', 'hard.txt', 'medium.txt', 'veryhard.txt']
 Hard_boards = ['almostlockedset.txt', 'suedecoq.txt', 'escargot.txt', 'artoinkala.txt']
 
 def main():
+    # For all boards
     for board in Boards: 
         print('Board ::', board)
-        csp1 = create_sudoku_csp('boards/' + board)
-        print_sudoku_solution(csp1.backtracking_search())
+
+        # Create the CSP for the sudoku board
+        csp = create_sudoku_csp('boards/' + board)
+        # Find the solution if any
+        solution = csp.backtracking_search()
+        # And print it
+        print_sudoku_solution(solution)
 
         input('Next\n')
 
-    csp2 = create_map_coloring_csp()
-    result = csp2.backtracking_search()
-    print(result)
-
+    # Createh the CSP for the map coloring problem
+    csp = create_map_coloring_csp()
+    # Find the solution if any
+    solution = csp.backtracking_search()
+    # And print it
+    pprint(solution)
 
 if __name__ == '__main__':
     main()
